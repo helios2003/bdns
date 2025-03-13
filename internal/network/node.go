@@ -9,6 +9,7 @@ import (
 
 	"github.com/bleasey/bdns/internal/blockchain"
 	"github.com/bleasey/bdns/internal/index"
+	"github.com/bleasey/bdns/internal/consensus"
 )
 
 // Represents a peer in the blockchain network
@@ -41,7 +42,12 @@ func (n *Node) InitializeNodeAsync(chainID string, registryKeys [][]byte, random
 	n.RegistryKeys = registryKeys
 	n.Blockchain = blockchain.CreateBlockchain(chainID, registryKeys, randomness)
 	go n.Start()
-	go n.CreateBlockIfLeader(epochInterval, seed)
+
+	_, secretValues := consensus.CommitmentPhase(n.RegistryKeys)
+	revealValues := consensus.RevealPhase(secretValues)
+	normalizedSeed := consensus.RecoveryPhase(revealValues)
+	
+	go n.CreateBlockIfLeader(epochInterval, int(normalizedSeed))
 }
 
 // Adds a peer to the list
